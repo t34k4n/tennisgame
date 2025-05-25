@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Karakter Seçimi</title>
+</head>
+<body style="text-align: center; font-family: sans-serif; background: #111; color: white;">
+
+    <h2>🎮 Karakter Seç</h2>
+    <p>Oyun boyunca görünümünü belirle!</p>
+
+    <form method="post" action="{% url 'character_select' %}">
+        {% csrf_token %}
+        <button type="submit" name="character" value="red" style="padding:20px; background:red; color:white; margin:20px;">Kırmızı</button>
+        <button type="submit" name="character" value="blue" style="padding:20px; background:blue; color:white; margin:20px;">Mavi</button>
+    </form>
+
+</body>
+</html>
+

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>🎾 Dikey Tenis – Gerçek Kort</title>
+    <style>
+        body {
+            background: #0b6623;
+            color: white;
+            text-align: center;
+            font-family: sans-serif;
+        }
+
+        canvas {
+            display: block;
+            margin: 40px auto;
+            background: #3e8e41;
+            border: 4px solid white;
+        }
+    </style>
+</head>
+<body>
+
+<h1>🎾 Dikey Tenis – Gerçek Kort</h1>
+<canvas id="gameCanvas" width="400" height="700"></canvas>
+<p>A/D: Hareket (P1) | ←/→: Hareket (P2) | Space: Servis</p>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const racketWidth = 80;
+    const racketHeight = 15;
+    const ballSize = 12;
+
+    const player1 = { x: 160, y: canvas.height - 30, score: 0 };
+    const player2 = { x: 160, y: 15, score: 0 };
+
+    let ball = { x: 0, y: 0, vx: 0, vy: 0 };
+    let servingPlayer = 1;
+    let inPlay = false;
+
+    const keys = {};
+    document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+    document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+    function drawCourt() {
+        // Çizgili zemin
+        const stripeWidth = canvas.width / 10;
+        for (let i = 0; i < 10; i++) {
+            ctx.fillStyle = i % 2 === 0 ? '#3e8e41' : '#348c4f';
+            ctx.fillRect(i * stripeWidth, 0, stripeWidth, canvas.height);
+        }
+
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 4;
+
+        // Dış sınır
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+        // File (ortadaki yatay çizgi)
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height / 2);
+        ctx.lineTo(canvas.width, canvas.height / 2);
+        ctx.stroke();
+
+        // Servis çizgileri
+        ctx.beginPath();
+        ctx.moveTo(canvas.width * 0.15, canvas.height * 0.25);
+        ctx.lineTo(canvas.width * 0.85, canvas.height * 0.25);
+        ctx.moveTo(canvas.width * 0.15, canvas.height * 0.75);
+        ctx.lineTo(canvas.width * 0.85, canvas.height * 0.75);
+        ctx.stroke();
+
+        // Ortadaki dik servis çizgisi
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, canvas.height * 0.25);
+        ctx.lineTo(canvas.width / 2, canvas.height * 0.75);
+        ctx.stroke();
+
+        // Tekler yan çizgileri
+        ctx.beginPath();
+        ctx.moveTo(canvas.width * 0.15, 0);
+        ctx.lineTo(canvas.width * 0.15, canvas.height);
+        ctx.moveTo(canvas.width * 0.85, 0);
+        ctx.lineTo(canvas.width * 0.85, canvas.height);
+        ctx.stroke();
+    }
+
+    function draw() {
+        drawCourt();
+
+        // PLAYER 1 (alt)
+        ctx.fillStyle = "red";
+        ctx.fillRect(player1.x, player1.y, racketWidth, racketHeight);
+
+        // PLAYER 2 (üst)
+        ctx.fillStyle = "white";
+        ctx.fillRect(player2.x, player2.y, racketWidth, racketHeight);
+
+        // Top
+        ctx.fillStyle = "yellow";
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Skor
+        ctx.font = "20px Arial";
+        ctx.fillStyle = "white";
+        ctx.fillText(`P1: ${player1.score}`, 20, canvas.height - 10);
+        ctx.fillText(`P2: ${player2.score}`, 20, 30);
+
+        if (!inPlay) {
+            ctx.fillText(`Servis: Player ${servingPlayer} (Space tuşu)`, 90, canvas.height / 2 - 10);
+        }
+    }
+
+    function update() {
+        if ((keys['a'] || keys['A']) && player1.x > 0) player1.x -= 5;
+        if ((keys['d'] || keys['D']) && player1.x < canvas.width - racketWidth) player1.x += 5;
+
+        if (keys['arrowleft'] && player2.x > 0) player2.x -= 5;
+        if (keys['arrowright'] && player2.x < canvas.width - racketWidth) player2.x += 5;
+
+        if (!inPlay && keys[' ']) {
+            inPlay = true;
+            ball.vx = 3 * (Math.random() > 0.5 ? 1 : -1);
+            ball.vy = servingPlayer === 1 ? -4 : 4;
+        }
+
+        if (!inPlay) {
+            ball.x = servingPlayer === 1 ? player1.x + racketWidth / 2 : player2.x + racketWidth / 2;
+            ball.y = servingPlayer === 1 ? player1.y - ballSize : player2.y + racketHeight + ballSize;
+            return;
+        }
+
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+
+        if (ball.x <= 0 || ball.x >= canvas.width) ball.vx *= -1;
+
+        if (
+            ball.y + ballSize >= player1.y &&
+            ball.x >= player1.x &&
+            ball.x <= player1.x + racketWidth
+        ) {
+            ball.vy *= -1;
+            ball.y = player1.y - ballSize;
+        }
+
+        if (
+            ball.y <= player2.y + racketHeight &&
+            ball.x >= player2.x &&
+            ball.x <= player2.x + racketWidth
+        ) {
+            ball.vy *= -1;
+            ball.y = player2.y + racketHeight;
+        }
+
+        if (ball.y > canvas.height) {
+            player2.score++;
+            nextServe();
+        } else if (ball.y < 0) {
+            player1.score++;
+            nextServe();
+        }
+
+        if (player1.score === 5 || player2.score === 5) {
+            alert(`🏆 Kazanan: ${player1.score === 5 ? "Player 1" : "Player 2"}`);
+            player1.score = 0;
+            player2.score = 0;
+            nextServe();
+        }
+    }
+
+    function nextServe() {
+        inPlay = false;
+        servingPlayer = servingPlayer === 1 ? 2 : 1;
+    }
+
+    function loop() {
+        update();
+        draw();
+        requestAnimationFrame(loop);
+    }
+
+    nextServe();
+    loop();
+</script>
+
+</body>
+</html>
+
+
+
