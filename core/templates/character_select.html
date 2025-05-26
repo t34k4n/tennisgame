@@ -82,7 +82,6 @@
     {% csrf_token %}
 
     <div class="selector-container">
-
         <!-- Player 1 -->
         <div class="player-box">
             <h3>Player 1</h3>
@@ -158,6 +157,12 @@
     renderChar(1);
     renderChar(2);
 </script>
+
+
+<img id="muteIcon" src="{% static 'speaker_icon.jpg' %}"
+     style="position: absolute; top: 20px; left: 20px; width: 32px; height: 32px; cursor: pointer; z-index: 999;">
+
+<script src="{% static 'SafariAudioManager.js' %}"></script>
 
 </body>
 </html>

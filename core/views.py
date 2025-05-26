@@ -3,9 +3,16 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 import re
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import user_passes_test
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+import json
+from .models import MatchResult
+
 
 def home(request):
     return render(request, 'home.html')
+
 
 def register_view(request):
     if request.method == 'POST':
@@ -37,6 +44,7 @@ def register_view(request):
 
     return render(request, 'register.html')
 
+
 def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -51,14 +59,17 @@ def login_view(request):
 
     return render(request, 'login.html')
 
+
 def guest_view(request):
     guest_user = User.objects.create_user(username=f'guest_{User.objects.count()}', password='guest')
     login(request, guest_user)
     return redirect('dashboard')
 
+
 def logout_view(request):
     logout(request)
     return redirect('home')
+
 
 def character_select(request):
     characters = [
@@ -78,7 +89,6 @@ def character_select(request):
                 'error': 'Her iki oyuncu için de karakter seçmelisin.'
             })
 
-        # Karakter verilerini session'a yaz
         char_data = {
             "red": {"speed": 1, "power": 1, "slowmo": 3, "color": "red"},
             "blue": {"speed": 2, "power": 2, "slowmo": 2, "color": "#1e90ff"},
@@ -105,15 +115,6 @@ def character_select(request):
     return render(request, 'character_select.html', { 'characters': characters })
 
 
-    characters = [
-        {'char': 'red', 'color': 'red', 'speed': 33, 'power': 33, 'slowmo': 100},
-        {'char': 'purple', 'color': 'purple', 'speed': 100, 'power': 33, 'slowmo': 33},
-        {'char': 'green', 'color': 'lime', 'speed': 33, 'power': 100, 'slowmo': 33},
-        {'char': 'blue', 'color': '#1e90ff', 'speed': 66, 'power': 66, 'slowmo': 66},
-    ]
-
-    return render(request, 'character_select.html', { 'characters': characters })
-
 def game_view(request):
     return render(request, 'game.html', {
         'slowmo1': request.session.get('slowmo1', 2),
@@ -123,7 +124,28 @@ def game_view(request):
     })
 
 def dashboard_view(request):
-    return render(request, 'dashboard.html')
+    recent_matches = []
+    if request.user.is_authenticated:
+        recent_matches = MatchResult.objects.filter(player=request.user).order_by('-created_at')[:5]
+    return render(request, 'dashboard.html', {'matches': recent_matches})
+
+
+@csrf_exempt
+def save_match(request):
+    if request.method == 'POST' and request.user.is_authenticated:
+        try:
+            data = json.loads(request.body)
+            MatchResult.objects.create(
+                player=request.user,
+                opponent=data.get('opponent', 'Unknown'),
+                player_score=data.get('player_score', 0),
+                opponent_score=data.get('opponent_score', 0)
+            )
+            return JsonResponse({'status': 'success'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'unauthorized'}, status=401)
+
 
 def settings_view(request):
     context = {}
@@ -160,9 +182,38 @@ def settings_view(request):
 
     return render(request, 'settings.html', context)
 
+
 def game_mode_view(request):
     if request.method == 'POST':
         mode = request.POST.get('mode')
         request.session['mode'] = mode
         return redirect('character_select')
     return render(request, 'game_mode.html')
+
+
+@user_passes_test(lambda u: u.is_staff)
+def admin_panel(request):
+    users = User.objects.exclude(is_superuser=True)
+    return render(request, 'admin_panel.html', {'users': users})
+
+
+@user_passes_test(lambda u: u.is_staff)
+def delete_user(request, user_id):
+    User.objects.filter(id=user_id).exclude(is_superuser=True).delete()
+    return redirect('admin_panel')
+
+def save_match(request):
+    if request.method == 'POST' and request.user.is_authenticated:
+        data = json.loads(request.body)
+        opponent = data.get('opponent', 'Unknown')
+        player_score = data.get('player_score', 0)
+        opponent_score = data.get('opponent_score', 0)
+
+        MatchResult.objects.create(
+            player=request.user,
+            opponent=opponent,
+            player_score=player_score,
+            opponent_score=opponent_score
+        )
+        return JsonResponse({'status': 'ok'})
+    return JsonResponse({'status': 'unauthorized'}, status=401)

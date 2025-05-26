@@ -23,6 +23,7 @@
             border-radius: 10px;
             width: 400px;
             text-align: center;
+            position: relative;
         }
 
         h2 {
@@ -38,12 +39,15 @@
             margin-bottom: 15px;
         }
 
-        input {
+        input,
+        .btn{
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 10px;
             border-radius: 6px;
             border: none;
+            font-weight: bold;
+            box-sizing: border-box;
         }
 
         .invalid {
@@ -51,18 +55,12 @@
         }
 
         .btn {
-            width: 100%;
             background-color: #1e90ff;
             color: white;
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
-            margin-bottom: 20px;
             cursor: pointer;
         }
 
-        .btn:hover {
+        .btn:hover{
             background-color: #4682b4;
         }
 
@@ -125,6 +123,14 @@
                 <button class="btn" name="change_password">Update Password</button>
             </div>
         </form>
+
+        <a href="{% url 'dashboard' %}" class="btn">← Back to Dashboard</a>
     </div>
+
+    
+    <img id="muteIcon" src="{% static 'speaker_icon.jpg' %}"
+         style="position: absolute; top: 20px; left: 20px; width: 32px; height: 32px; cursor: pointer; z-index: 999;">
+
+    <script src="{% static 'SafariAudioManager.js' %}"></script>
 </body>
 </html>
