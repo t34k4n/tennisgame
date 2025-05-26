@@ -12,31 +12,17 @@
             text-align: center;
         }
 
-        .slider-section {
-            margin: 40px auto;
-        }
-
-        .slider-label {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-
-        .character-slider {
+        .selector-container {
             display: flex;
-            overflow-x: auto;
-            scroll-snap-type: x mandatory;
-            gap: 20px;
-            padding: 10px;
-            margin-bottom: 30px;
+            justify-content: space-around;
+            margin-top: 40px;
         }
 
-        .character-card {
+        .player-box {
             background-color: #222;
             padding: 20px;
             border-radius: 10px;
-            width: 200px;
-            scroll-snap-align: center;
-            flex-shrink: 0;
+            width: 300px;
             box-shadow: 0 0 10px #000;
         }
 
@@ -62,7 +48,23 @@
             height: 10px;
         }
 
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+        }
+
+        .nav-buttons button {
+            padding: 8px 16px;
+            background-color: #444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
         .play-btn {
+            margin-top: 40px;
             padding: 12px 24px;
             font-size: 18px;
             font-weight: bold;
@@ -75,51 +77,87 @@
     </style>
 </head>
 <body>
-    <h2>🎮 Her Oyuncu İçin Karakter Seç</h2>
+<h2>🎮 Her Oyuncu İçin Karakter Seç</h2>
+<form method="POST">
+    {% csrf_token %}
 
-    <form method="POST">
-        {% csrf_token %}
+    <div class="selector-container">
 
-        <!-- Oyuncu 1 -->
-        <div class="slider-section">
-            <div class="slider-label">Player 1</div>
-            <div class="character-slider">
-                {% for c in characters %}
-                <label class="character-card" style="border: 2px solid {{ c.color }};">
-                    <input type="radio" name="character1" value="{{ c.char }}" hidden required>
-                    <div class="char-name">{{ c.char|title }}</div>
-                    <div class="bar-label">Hız</div>
-                    <div class="bar"><div class="bar-fill" style="width: {{ c.speed }}%; background: {{ c.color }};"></div></div>
-                    <div class="bar-label">Güç</div>
-                    <div class="bar"><div class="bar-fill" style="width: {{ c.power }}%; background: {{ c.color }};"></div></div>
-                    <div class="bar-label">Slow Mo</div>
-                    <div class="bar"><div class="bar-fill" style="width: {{ c.slowmo }}%; background: {{ c.color }};"></div></div>
-                </label>
-                {% endfor %}
+        <!-- Player 1 -->
+        <div class="player-box">
+            <h3>Player 1</h3>
+            <div id="char-name-1" class="char-name"></div>
+            <div class="bar-label">Hız</div>
+            <div class="bar"><div id="bar-speed-1" class="bar-fill"></div></div>
+            <div class="bar-label">Güç</div>
+            <div class="bar"><div id="bar-power-1" class="bar-fill"></div></div>
+            <div class="bar-label">Slow Mo</div>
+            <div class="bar"><div id="bar-slowmo-1" class="bar-fill"></div></div>
+            <div class="nav-buttons">
+                <button type="button" onclick="changeChar(-1, 1)">&larr;</button>
+                <button type="button" onclick="changeChar(1, 1)">&rarr;</button>
             </div>
+            <input type="hidden" id="character1" name="character1" required>
         </div>
 
-        <!-- Oyuncu 2 -->
-        <div class="slider-section">
-            <div class="slider-label">Player 2</div>
-            <div class="character-slider">
-                {% for c in characters %}
-                <label class="character-card" style="border: 2px solid {{ c.color }};">
-                    <input type="radio" name="character2" value="{{ c.char }}" hidden required>
-                    <div class="char-name">{{ c.char|title }}</div>
-                    <div class="bar-label">Hız</div>
-                    <div class="bar"><div class="bar-fill" style="width: {{ c.speed }}%; background: {{ c.color }};"></div></div>
-                    <div class="bar-label">Güç</div>
-                    <div class="bar"><div class="bar-fill" style="width: {{ c.power }}%; background: {{ c.color }};"></div></div>
-                    <div class="bar-label">Slow Mo</div>
-                    <div class="bar"><div class="bar-fill" style="width: {{ c.slowmo }}%; background: {{ c.color }};"></div></div>
-                </label>
-                {% endfor %}
+        <!-- Player 2 -->
+        <div class="player-box">
+            <h3>Player 2</h3>
+            <div id="char-name-2" class="char-name"></div>
+            <div class="bar-label">Hız</div>
+            <div class="bar"><div id="bar-speed-2" class="bar-fill"></div></div>
+            <div class="bar-label">Güç</div>
+            <div class="bar"><div id="bar-power-2" class="bar-fill"></div></div>
+            <div class="bar-label">Slow Mo</div>
+            <div class="bar"><div id="bar-slowmo-2" class="bar-fill"></div></div>
+            <div class="nav-buttons">
+                <button type="button" onclick="changeChar(-1, 2)">&larr;</button>
+                <button type="button" onclick="changeChar(1, 2)">&rarr;</button>
             </div>
+            <input type="hidden" id="character2" name="character2" required>
         </div>
+    </div>
 
-        <button type="submit" class="play-btn">Play</button>
-    </form>
+    <button type="submit" class="play-btn">Play</button>
+</form>
+
+<script>
+    const characters = [
+        { char: 'red', color: 'red', speed: 33, power: 33, slowmo: 100 },
+        { char: 'purple', color: 'purple', speed: 100, power: 33, slowmo: 33 },
+        { char: 'green', color: 'lime', speed: 33, power: 100, slowmo: 33 },
+        { char: 'blue', color: '#1e90ff', speed: 66, power: 66, slowmo: 66 },
+    ];
+
+    let index1 = 0;
+    let index2 = 0;
+
+    function renderChar(player) {
+        const i = (player === 1) ? index1 : index2;
+        const c = characters[i];
+
+        document.getElementById(`char-name-${player}`).innerText = c.char.toUpperCase();
+        document.getElementById(`bar-speed-${player}`).style.width = c.speed + '%';
+        document.getElementById(`bar-speed-${player}`).style.background = c.color;
+        document.getElementById(`bar-power-${player}`).style.width = c.power + '%';
+        document.getElementById(`bar-power-${player}`).style.background = c.color;
+        document.getElementById(`bar-slowmo-${player}`).style.width = c.slowmo + '%';
+        document.getElementById(`bar-slowmo-${player}`).style.background = c.color;
+        document.getElementById(`character${player}`).value = c.char;
+    }
+
+    function changeChar(direction, player) {
+        if (player === 1) {
+            index1 = (index1 + direction + characters.length) % characters.length;
+        } else {
+            index2 = (index2 + direction + characters.length) % characters.length;
+        }
+        renderChar(player);
+    }
+
+    renderChar(1);
+    renderChar(2);
+</script>
 
 </body>
 </html>
