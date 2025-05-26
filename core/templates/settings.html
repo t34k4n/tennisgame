@@ -1,10 +1,130 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <style>
+        body {
+            background-image: url("{% static 'background.jpg' %}");
+            background-size: cover;
+            font-family: 'Segoe UI', sans-serif;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            padding-top: 50px;
+        }
+
+        .container {
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 10px;
+            width: 400px;
+            text-align: center;
+        }
+
+        h2 {
+            margin-bottom: 15px;
+        }
+
+        .profile-img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            margin-bottom: 15px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: none;
+        }
+
+        .invalid {
+            border: 2px solid red !important;
+        }
+
+        .btn {
+            width: 100%;
+            background-color: #1e90ff;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #4682b4;
+        }
+
+        .alert {
+            background-color: #ffffff;
+            color: black;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+    </style>
 </head>
 <body>
-$END$
+    <div class="container">
+        <h2>Settings</h2>
+        <img src="{% static 'user_default.jpg' %}" alt="Profile Photo" class="profile-img">
+
+        <div class="section">
+            <h3>Profile Picture</h3>
+            <button class="btn" onclick="alert('Feature under development')">Change Profile Picture</button>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="section">
+                <h3>Change Email</h3>
+                {% if email_error %}
+                    <div class="alert">{{ email_error }}</div>
+                {% elif email_success %}
+                    <div class="alert">{{ email_success }}</div>
+                {% endif %}
+                <input type="email" name="old_email" placeholder="Old Email" required
+                       class="{% if email_error %}invalid{% endif %}">
+                <input type="email" name="new_email" placeholder="New Email" required
+                       class="{% if email_error %}invalid{% endif %}">
+                <button class="btn" name="change_email">Update Email</button>
+            </div>
+        </form>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="section">
+                <h3>Change Password</h3>
+                {% if password_error %}
+                    <div class="alert">{{ password_error }}</div>
+                {% elif password_success %}
+                    <div class="alert">{{ password_success }}</div>
+                {% endif %}
+                <input type="password" name="old_password" placeholder="Old Password" required
+                       class="{% if password_error %}invalid{% endif %}">
+                <input type="password" name="new_password" placeholder="New Password" required
+                       class="{% if password_error %}invalid{% endif %}">
+                <input type="password" name="confirm_password" placeholder="Confirm New Password" required
+                       class="{% if password_error %}invalid{% endif %}">
+                <button class="btn" name="change_password">Update Password</button>
+            </div>
+        </form>
+    </div>
 </body>
 </html>

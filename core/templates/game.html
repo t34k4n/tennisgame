@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -9,12 +10,25 @@
             text-align: center;
             font-family: sans-serif;
         }
-
         canvas {
             display: block;
             margin: 40px auto;
             background: #3e8e41;
             border: 4px solid white;
+        }
+        .end-buttons {
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .end-buttons button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 6px;
+            border: none;
         }
     </style>
 </head>
@@ -22,9 +36,23 @@
 
 <h1>🎾 Dikey Tenis – Gerçek Kort</h1>
 <canvas id="gameCanvas" width="400" height="700"></canvas>
-<p>A/D: Hareket (P1) | ←/→: Hareket (P2) | Space: Servis</p>
+<p id="controls-info">Tüm oyuncular için key mapping yükleniyor...</p>
+
+<div class="end-buttons" id="endButtons">
+    <button onclick="location.href='{% url 'character_select' %}'">Tekrar Oyna</button>
+    <button onclick="location.href='{% url 'dashboard' %}'">Menü</button>
+</div>
 
 <script>
+    const slowMoDurationP1 = {{ slowmo1 }};
+    const slowMoDurationP2 = {{ slowmo2 }};
+    const color1 = '{{ color1 }}';
+    const color2 = '{{ color2|default:"white" }}';
+    const moveSpeedP1 = {{ request.session.speed1|default:2 }};
+    const moveSpeedP2 = {{ request.session.speed2|default:2 }};
+    const powerP1 = {{ request.session.power1|default:2 }};
+    const powerP2 = {{ request.session.power2|default:2 }};
+
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
@@ -38,93 +66,95 @@
     let ball = { x: 0, y: 0, vx: 0, vy: 0 };
     let servingPlayer = 1;
     let inPlay = false;
+    let gameOver = false;
+
+    let keyMap = {
+        moveLeftP1: 'a',
+        moveRightP1: 'd',
+        slowmoP1: 'q',
+        moveLeftP2: 'arrowleft',
+        moveRightP2: 'arrowright',
+        slowmoP2: 'shift'
+    };
+
+    if (localStorage.getItem('keyMapping')) {
+        keyMap = JSON.parse(localStorage.getItem('keyMapping'));
+    }
+
+    document.getElementById('controls-info').innerText =
+        `P1: ${keyMap.moveLeftP1}/${keyMap.moveRightP1}, SlowMo: ${keyMap.slowmoP1} | P2: ${keyMap.moveLeftP2}/${keyMap.moveRightP2}, SlowMo: ${keyMap.slowmoP2}`;
 
     const keys = {};
     document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
     document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
+    let slowMo = {
+        active: false,
+        timeLeft: 0,
+        player: null
+    };
+
     function drawCourt() {
-        // Çizgili zemin
         const stripeWidth = canvas.width / 10;
         for (let i = 0; i < 10; i++) {
             ctx.fillStyle = i % 2 === 0 ? '#3e8e41' : '#348c4f';
             ctx.fillRect(i * stripeWidth, 0, stripeWidth, canvas.height);
         }
-
         ctx.strokeStyle = 'white';
         ctx.lineWidth = 4;
-
-        // Dış sınır
         ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-        // File (ortadaki yatay çizgi)
         ctx.beginPath();
         ctx.moveTo(0, canvas.height / 2);
         ctx.lineTo(canvas.width, canvas.height / 2);
-        ctx.stroke();
-
-        // Servis çizgileri
-        ctx.beginPath();
-        ctx.moveTo(canvas.width * 0.15, canvas.height * 0.25);
-        ctx.lineTo(canvas.width * 0.85, canvas.height * 0.25);
-        ctx.moveTo(canvas.width * 0.15, canvas.height * 0.75);
-        ctx.lineTo(canvas.width * 0.85, canvas.height * 0.75);
-        ctx.stroke();
-
-        // Ortadaki dik servis çizgisi
-        ctx.beginPath();
-        ctx.moveTo(canvas.width / 2, canvas.height * 0.25);
-        ctx.lineTo(canvas.width / 2, canvas.height * 0.75);
-        ctx.stroke();
-
-        // Tekler yan çizgileri
-        ctx.beginPath();
-        ctx.moveTo(canvas.width * 0.15, 0);
-        ctx.lineTo(canvas.width * 0.15, canvas.height);
-        ctx.moveTo(canvas.width * 0.85, 0);
-        ctx.lineTo(canvas.width * 0.85, canvas.height);
         ctx.stroke();
     }
 
     function draw() {
         drawCourt();
-
-        // PLAYER 1 (alt)
-        ctx.fillStyle = "red";
+        ctx.fillStyle = color1;
         ctx.fillRect(player1.x, player1.y, racketWidth, racketHeight);
-
-        // PLAYER 2 (üst)
-        ctx.fillStyle = "white";
+        ctx.fillStyle = color2;
         ctx.fillRect(player2.x, player2.y, racketWidth, racketHeight);
-
-        // Top
         ctx.fillStyle = "yellow";
         ctx.beginPath();
         ctx.arc(ball.x, ball.y, ballSize / 2, 0, Math.PI * 2);
         ctx.fill();
-
-        // Skor
         ctx.font = "20px Arial";
         ctx.fillStyle = "white";
         ctx.fillText(`P1: ${player1.score}`, 20, canvas.height - 10);
         ctx.fillText(`P2: ${player2.score}`, 20, 30);
-
         if (!inPlay) {
             ctx.fillText(`Servis: Player ${servingPlayer} (Space tuşu)`, 90, canvas.height / 2 - 10);
         }
     }
 
     function update() {
-        if ((keys['a'] || keys['A']) && player1.x > 0) player1.x -= 5;
-        if ((keys['d'] || keys['D']) && player1.x < canvas.width - racketWidth) player1.x += 5;
+        if (gameOver) return;
 
-        if (keys['arrowleft'] && player2.x > 0) player2.x -= 5;
-        if (keys['arrowright'] && player2.x < canvas.width - racketWidth) player2.x += 5;
+        let speedFactor = 1;
+        if (slowMo.active) {
+            speedFactor = 0.4;
+            slowMo.timeLeft -= 1 / 60;
+            if (slowMo.timeLeft <= 0) slowMo.active = false;
+        }
+
+        if (keys[keyMap.moveLeftP1] && player1.x > 0) player1.x -= moveSpeedP1 * 2 * speedFactor;
+        if (keys[keyMap.moveRightP1] && player1.x < canvas.width - racketWidth) player1.x += moveSpeedP1 * 2 * speedFactor;
+        if (keys[keyMap.moveLeftP2] && player2.x > 0) player2.x -= moveSpeedP2 * 2 * speedFactor;
+        if (keys[keyMap.moveRightP2] && player2.x < canvas.width - racketWidth) player2.x += moveSpeedP2 * 2 * speedFactor;
+
+        if (keys[keyMap.slowmoP1] && !slowMo.active) {
+            slowMo = { active: true, timeLeft: slowMoDurationP1, player: 1 };
+        }
+        if (keys[keyMap.slowmoP2] && !slowMo.active) {
+            slowMo = { active: true, timeLeft: slowMoDurationP2, player: 2 };
+        }
 
         if (!inPlay && keys[' ']) {
             inPlay = true;
-            ball.vx = 3 * (Math.random() > 0.5 ? 1 : -1);
-            ball.vy = servingPlayer === 1 ? -4 : 4;
+            const power = servingPlayer === 1 ? powerP1 : powerP2;
+            ball.vx = (2.5 + power) * (Math.random() > 0.5 ? 1 : -1); // Topun YATAY çıkış hızı arttırıldı (eğlence için)
+            ball.vy = (servingPlayer === 1 ? -1 : 1) * (3.5 + power); // Topun DİKEY çıkış hızı arttırıldı
         }
 
         if (!inPlay) {
@@ -133,28 +163,29 @@
             return;
         }
 
-        ball.x += ball.vx;
-        ball.y += ball.vy;
+        ball.x += ball.vx * speedFactor;
+        ball.y += ball.vy * speedFactor;
+
+        // Top sekme sonrası hızlanma eklendi ↓
+        const maxSpeed = 10; // Aşırı hızlanmayı engellemek için sınır
 
         if (ball.x <= 0 || ball.x >= canvas.width) ball.vx *= -1;
 
-        if (
-            ball.y + ballSize >= player1.y &&
-            ball.x >= player1.x &&
-            ball.x <= player1.x + racketWidth
-        ) {
-            ball.vy *= -1;
+        if (ball.y + ballSize >= player1.y && ball.x >= player1.x && ball.x <= player1.x + racketWidth) {
+            ball.vy *= -1.1; // Dikey hız %10 artar
+            ball.vx *= 1.05; // Yatay hız %5 artar
             ball.y = player1.y - ballSize;
         }
 
-        if (
-            ball.y <= player2.y + racketHeight &&
-            ball.x >= player2.x &&
-            ball.x <= player2.x + racketWidth
-        ) {
-            ball.vy *= -1;
+        if (ball.y <= player2.y + racketHeight && ball.x >= player2.x && ball.x <= player2.x + racketWidth) {
+            ball.vy *= -1.1;
+            ball.vx *= 1.05;
             ball.y = player2.y + racketHeight;
         }
+
+        // Hız limitleri uygulanıyor
+        ball.vx = Math.max(Math.min(ball.vx, maxSpeed), -maxSpeed);
+        ball.vy = Math.max(Math.min(ball.vy, maxSpeed), -maxSpeed);
 
         if (ball.y > canvas.height) {
             player2.score++;
@@ -165,10 +196,8 @@
         }
 
         if (player1.score === 5 || player2.score === 5) {
-            alert(`🏆 Kazanan: ${player1.score === 5 ? "Player 1" : "Player 2"}`);
-            player1.score = 0;
-            player2.score = 0;
-            nextServe();
+            gameOver = true;
+            document.getElementById('endButtons').style.display = 'flex';
         }
     }
 
@@ -189,6 +218,3 @@
 
 </body>
 </html>
-
-
-

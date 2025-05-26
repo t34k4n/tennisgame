@@ -1,10 +1,206 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Dashboard - On Court</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-image: url("{% static 'background.jpg' %}");
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .profile-box {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255,255,255,0.9);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            width: 150px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+        }
+
+        .profile-image {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        .username {
+            color: black;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .dropdown {
+            display: none;
+            flex-direction: column;
+            margin-top: 10px;
+            gap: 8px;
+        }
+
+        .dropdown a {
+            text-decoration: none;
+            color: white;
+            background-color: #1e90ff;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: background-color 0.2s ease;
+        }
+
+        .dropdown a:hover {
+            background-color: #4682b4;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .main-button {
+            background-color: white;
+            color: black;
+            padding: 16px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .main-button:hover {
+            background-color: #dddddd;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            color: black;
+            padding: 30px;
+            border-radius: 10px;
+            width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .modal label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+
+        .modal input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .modal section {
+            margin-bottom: 30px;
+        }
+    </style>
 </head>
 <body>
-$END$
+
+    <!-- Kullanıcı Kutusu -->
+    <div class="profile-box" onmouseover="showDropdown()" onmouseout="hideDropdown()">
+        <img class="profile-image" src="{% static 'user_default.jpg' %}" alt="User">
+        <div class="username">{{ request.user.username }}</div>
+        <div class="dropdown" id="dropdownMenu">
+            <a href="{% url 'settings' %}">Settings</a>
+            <a href="{% url 'logout' %}">Log out</a>
+        </div>
+    </div>
+
+    <!-- Ana Butonlar -->
+    <div class="buttons">
+        <form action="{% url 'game_mode' %}">
+            <button class="main-button">Play</button>
+        </form>
+        <button class="main-button" onclick="openModal()">Key Mapping</button>
+    </div>
+
+    <!-- Key Mapping Modal -->
+    <div class="modal" id="keyModal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Key Mapping</h3>
+
+            <section>
+                <h4>Player 1</h4>
+                <label>Move Left:</label>
+                <input type="text" placeholder="e.g. A">
+                <label>Move Right:</label>
+                <input type="text" placeholder="e.g. D">
+                <label>Hit Ball:</label>
+                <input type="text" placeholder="e.g. S">
+                <label>Slow Motion:</label>
+                <input type="text" placeholder="e.g. Shift">
+            </section>
+
+            <section>
+                <h4>Player 2</h4>
+                <label>Move Left:</label>
+                <input type="text" placeholder="e.g. Left Arrow">
+                <label>Move Right:</label>
+                <input type="text" placeholder="e.g. Right Arrow">
+                <label>Hit Ball:</label>
+                <input type="text" placeholder="e.g. Down Arrow">
+                <label>Slow Motion:</label>
+                <input type="text" placeholder="e.g. Enter">
+            </section>
+        </div>
+    </div>
+
+    <script>
+        function openModal() {
+            document.getElementById("keyModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("keyModal").style.display = "none";
+        }
+
+        function showDropdown() {
+            document.getElementById("dropdownMenu").style.display = "flex";
+        }
+
+        function hideDropdown() {
+            document.getElementById("dropdownMenu").style.display = "none";
+        }
+    </script>
 </body>
 </html>
