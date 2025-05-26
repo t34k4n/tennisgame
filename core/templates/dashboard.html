@@ -162,36 +162,58 @@
             <section>
                 <h4>Player 1</h4>
                 <label>Move Left:</label>
-                <input type="text" placeholder="e.g. A">
+                <input type="text" id="p1left" placeholder="e.g. A">
                 <label>Move Right:</label>
-                <input type="text" placeholder="e.g. D">
-                <label>Hit Ball:</label>
-                <input type="text" placeholder="e.g. S">
+                <input type="text" id="p1right" placeholder="e.g. D">
                 <label>Slow Motion:</label>
-                <input type="text" placeholder="e.g. Shift">
+                <input type="text" id="p1slowmo" placeholder="e.g. Q">
             </section>
 
             <section>
                 <h4>Player 2</h4>
                 <label>Move Left:</label>
-                <input type="text" placeholder="e.g. Left Arrow">
+                <input type="text" id="p2left" placeholder="e.g. Left Arrow">
                 <label>Move Right:</label>
-                <input type="text" placeholder="e.g. Right Arrow">
-                <label>Hit Ball:</label>
-                <input type="text" placeholder="e.g. Down Arrow">
+                <input type="text" id="p2right" placeholder="e.g. Right Arrow">
                 <label>Slow Motion:</label>
-                <input type="text" placeholder="e.g. Enter">
+                <input type="text" id="p2slowmo" placeholder="e.g. Shift">
             </section>
+
+            <button onclick="saveKeyMapping()" class="main-button">Save</button>
         </div>
     </div>
 
     <script>
         function openModal() {
+            const mapping = JSON.parse(localStorage.getItem('keyMapping')) || {
+                moveLeftP1: 'a', moveRightP1: 'd', slowmoP1: 'q',
+                moveLeftP2: 'arrowleft', moveRightP2: 'arrowright', slowmoP2: 'shift'
+            };
+            document.getElementById("p1left").value = mapping.moveLeftP1;
+            document.getElementById("p1right").value = mapping.moveRightP1;
+            document.getElementById("p1slowmo").value = mapping.slowmoP1;
+            document.getElementById("p2left").value = mapping.moveLeftP2;
+            document.getElementById("p2right").value = mapping.moveRightP2;
+            document.getElementById("p2slowmo").value = mapping.slowmoP2;
             document.getElementById("keyModal").style.display = "flex";
         }
 
         function closeModal() {
             document.getElementById("keyModal").style.display = "none";
+        }
+
+        function saveKeyMapping() {
+            const keyMap = {
+                moveLeftP1: document.getElementById("p1left").value.toLowerCase(),
+                moveRightP1: document.getElementById("p1right").value.toLowerCase(),
+                slowmoP1: document.getElementById("p1slowmo").value.toLowerCase(),
+                moveLeftP2: document.getElementById("p2left").value.toLowerCase(),
+                moveRightP2: document.getElementById("p2right").value.toLowerCase(),
+                slowmoP2: document.getElementById("p2slowmo").value.toLowerCase(),
+            };
+            localStorage.setItem('keyMapping', JSON.stringify(keyMap));
+            alert("Key Mapping saved successfully!");
+            closeModal();
         }
 
         function showDropdown() {
